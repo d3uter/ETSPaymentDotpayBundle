@@ -88,17 +88,24 @@ class DotpayDirectPlugin extends AbstractPlugin
     /**
      * @var integer
      */
-    protected $type;
+    protected $typeMode;
 
     /**
-     * @param Router  $router      The router
-     * @param Token   $token       The client token
-     * @param String  $stringTools The String tool package
-     * @param string  $url         The urlc
-     * @param integer $type        The type
-     * @param string  $returnUrl   The return url
+     * @var string
      */
-    public function __construct(Router $router, Token $token, String $stringTools, $url, $type, $returnUrl)
+    protected $testHostUrlc;
+
+    /**
+     * @param Router $router The router
+     * @param Token $token The client token
+     * @param String|String $stringTools The String tool package
+     * @param string $url The urlc
+     * @param integer $type The type
+     * @param string $returnUrl The return url
+     * @param $testMode
+     * @param $testHostUrlc
+     */
+    public function __construct(Router $router, Token $token, String $stringTools, $url, $type, $returnUrl, $testMode, $testHostUrlc)
     {
         $this->router = $router;
         $this->token = $token;
@@ -106,6 +113,8 @@ class DotpayDirectPlugin extends AbstractPlugin
         $this->returnUrl = $returnUrl;
         $this->url = $url;
         $this->type = $type;
+        $this->testMode = $testMode;
+        $this->testHostUrlc = $testHostUrlc;
     }
 
     /**
@@ -118,7 +127,11 @@ class DotpayDirectPlugin extends AbstractPlugin
      * another transaction.
      *
      * @param FinancialTransactionInterface $transaction The transaction
-     * @param boolean                       $retry       Retry
+     * @param boolean $retry Retry
+     *
+     * @throws ActionRequiredException
+     * @throws FinancialException
+     * @throws TimeoutException
      */
     public function approveAndDeposit(FinancialTransactionInterface $transaction, $retry)
     {
@@ -143,9 +156,17 @@ class DotpayDirectPlugin extends AbstractPlugin
         $instruction = $transaction->getPayment()->getPaymentInstruction();
 
         $extendedData = $transaction->getExtendedData();
-        $urlc         = $this->router->generate('ets_payment_dotpay_callback_urlc', array(
-            'id' => $instruction->getId()
-        ), true);
+
+        if($this->testMode && $this->testHostUrlc){
+            $urlc         = $this->router->generate('ets_payment_dotpay_callback_urlc', array(
+                'id' => $instruction->getId()
+            ), false);
+            $urlc = $this->testHostUrlc.$urlc;
+        }else{
+            $urlc         = $this->router->generate('ets_payment_dotpay_callback_urlc', array(
+                'id' => $instruction->getId()
+            ), true);
+        }
 
         $datas = array(
             'id'                => $this->token->getId(),
@@ -189,7 +210,10 @@ class DotpayDirectPlugin extends AbstractPlugin
      * authorized.
      *
      * @param FinancialTransactionInterface $transaction The transaction
-     * @param boolean                       $retry       Retry
+     * @param boolean $retry Retry
+     *
+     * @throws BlockedException
+     * @throws FinancialException
      */
     public function approve(FinancialTransactionInterface $transaction, $retry)
     {
@@ -232,9 +256,13 @@ class DotpayDirectPlugin extends AbstractPlugin
      * A typical use case are Credit Card payments.
      *
      * @param FinancialTransactionInterface $transaction The transaction
-     * @param boolean                       $retry       Retry
+     * @param boolean $retry Retry
      *
      * @return mixed
+     * @throws BlockedException
+     * @throws FinancialException
+     * @throws FunctionNotSupportedException
+     * @throws TimeoutException
      */
     public function deposit(FinancialTransactionInterface $transaction, $retry)
     {
@@ -363,6 +391,28 @@ class DotpayDirectPlugin extends AbstractPlugin
     protected function getReturnUrl(ExtendedDataInterface $data)
     {
         if ($data->has('return_url')) {
+            $url = $data->get('return_url');
+            if (!empty($url)) {
+                return $url;
+            }
+        }
+
+        if (0 !== strlen($this->returnUrl)) {
+            return $this->returnUrl;
+        }
+
+        throw new \RuntimeException('You must configure a return url.');
+    }
+
+    /**
+     * @param \JMS\Payment\CoreBundle\Model\ExtendedDataInterface $data
+     *
+     * @return string
+     * @throws \RuntimeException
+     */
+    protected function getMode(ExtendedDataInterface $data)
+    {
+        if ($data->has('test')) {
             $url = $data->get('return_url');
             if (!empty($url)) {
                 return $url;

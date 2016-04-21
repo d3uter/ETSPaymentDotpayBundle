@@ -49,5 +49,7 @@ class ETSPaymentDotpayExtension extends Extension
         $container->setParameter('payment.dotpay.direct.url', $config['direct']['url']);
         $container->setParameter('payment.dotpay.direct.type', $config['direct']['type']);
         $container->setParameter('payment.dotpay.direct.return_url', $config['direct']['return_url']);
+        $container->setParameter('payment.dotpay.direct.test_mode', $config['direct']['test_mode']);
+        $container->setParameter('payment.dotpay.direct.test_host_urlc', $config['direct']['test_host_urlc']);
     }
 }

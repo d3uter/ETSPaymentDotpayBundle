@@ -409,25 +409,4 @@ class DotpayDirectPlugin extends AbstractPlugin
         throw new \RuntimeException('You must configure a return url.');
     }
 
-    /**
-     * @param \JMS\Payment\CoreBundle\Model\ExtendedDataInterface $data
-     *
-     * @return string
-     * @throws \RuntimeException
-     */
-    protected function getMode(ExtendedDataInterface $data)
-    {
-        if ($data->has('test')) {
-            $url = $data->get('return_url');
-            if (!empty($url)) {
-                return $url;
-            }
-        }
-
-        if (0 !== strlen($this->returnUrl)) {
-            return $this->returnUrl;
-        }
-
-        throw new \RuntimeException('You must configure a return url.');
-    }
 }

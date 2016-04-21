@@ -26,6 +26,8 @@ Configuration
             url: the dotpay url (Optional, default : https://ssl.dotpay.pl/ )
             type: defines a method of redirection to the seller’s web page (Optional, default: 2)
             return_url: The url of the return button (Optional)
+            test_mode: true/false, false default: required true for test_host_urlc
+            test_host_urlc: host name added to default relative url based on routing eg: 'http://12.12.12.16:3999'
             
             
             
